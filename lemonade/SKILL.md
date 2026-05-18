@@ -49,7 +49,7 @@ For reference — what `notion-create-database` provisions on first run. You do 
 
 | Column        | Type             | Notes                                                              |
 |---------------|------------------|--------------------------------------------------------------------|
-| Row           | Title            | Default title column. Human label, e.g. `Hand Turned · STATE`.     |
+| Row           | Title            | Default title column. Human label, e.g. `Acme HVAC · STATE`.     |
 | Project       | Text             | Project name or `__global__`. Text (not Select) for fuzzy match.   |
 | Type          | Select           | Options: `STATE`, `DECISIONS`, `ROADMAP`, `ARTIFACT`.              |
 | Slug          | Text             | ARTIFACT only — title-family key. Empty otherwise.                 |
@@ -74,7 +74,7 @@ Either way you'll see a confirmation. Open Notion → the `Claude Memory` databa
 
 The skill operates in two modes, distinguished only by the `Project` column value:
 
-- **Project mode** — `Project` column = a real project name (e.g., `Hand Turned`, `Veil`). Supports all four Types: STATE, DECISIONS, ROADMAP, ARTIFACT.
+- **Project mode** — `Project` column = a real project name (e.g., `Acme HVAC`, `Beacon Capital`). Supports all four Types: STATE, DECISIONS, ROADMAP, ARTIFACT.
 - **Global mode** — `Project` column = `__global__`. Supports only DECISIONS (general learnings) and ARTIFACT (reference files). No STATE — there's no single "current focus" for everything. No ROADMAP — there's no single arc. Just a running learnings log and an artifact stash.
 
 **Defaulting**: When the user invokes the skill in a chat with no clear project context, default to `__global__` without asking. A chat "has project context" if the user named a project, OR earlier in the same chat the skill already resolved one, OR the chat is clearly about a known project (its name appears in the Project column of existing rows). Otherwise, global.
@@ -85,7 +85,7 @@ The skill operates in two modes, distinguished only by the `Project` column valu
 
 One row per file. The skill auto-creates the schema on first run (see Setup §3 for the canonical column list). Row title convention:
 
-- Project: `<Project> · <Type>` (e.g. `Hand Turned · STATE`)
+- Project: `<Project> · <Type>` (e.g. `Acme HVAC · STATE`)
 - Artifact: `<Project> · ARTIFACT · <Slug> · <Version>`
 - Global: `Global · DECISIONS` or `Global · ARTIFACT · <Slug> · <Version>` (friendly "Global" in the title, `__global__` in the Project column for queryability).
 
@@ -112,7 +112,7 @@ End-of-chat writeback. YOLO mode — write everything, summarize after.
    - If `NOTION_DATA_SOURCE_ID` is set in the config block, use it.
    - Else `notion-search` for `DATABASE_NAME` (default `Claude Memory`). If exactly one match, cache its data source ID for the current turn. If multiple matches, ask the user which one to use (then cache the choice). **If zero matches, enter first-run mode** (see Setup §3): ask the user where to create the database, call `notion-create-database` with the canonical schema, then proceed.
    - Cache the resolved data source ID for the remainder of the turn — don't re-search on every command.
-2. **Identify the project.** If the user named one ("for Hand Turned"), use it. Otherwise check: does the chat clearly reference a known project (name appears in existing rows' Project column, case-insensitive substring match)? If yes, use that project. **If no project context at all, use `__global__`.** Only ask if there's genuine ambiguity (e.g., two known projects mentioned roughly equally).
+2. **Identify the project.** If the user named one ("for Acme HVAC"), use it. Otherwise check: does the chat clearly reference a known project (name appears in existing rows' Project column, case-insensitive substring match)? If yes, use that project. **If no project context at all, use `__global__`.** Only ask if there's genuine ambiguity (e.g., two known projects mentioned roughly equally).
 3. **Read existing rows for this Project value.** Query the database filtered by `Project = <resolved name>`. You need to know which rows already exist before you decide create vs. update.
 4. **Idempotency gate (best-effort).** If you ran `distill` earlier in this same turn AND no new artifacts/decisions have been generated in the chat since that call, treat the second invocation as a no-op and report "Already distilled in this turn — nothing new to write." This is a best-effort check; Claude can't reliably reason about "everything since a Notion timestamp" — only about what happened in the current conversation.
 5. **Rewrite STATE** using the template. Single row, overwritten. Stamp `Skill-Version` column. *Skip entirely in global mode.*
@@ -175,7 +175,7 @@ End-of-project cleanup. **This command breaks YOLO** — confirm once before act
 4. Set every original row's `Project` column to `__archived__/<name>` (rows become invisible to `list projects` and project resolution; they remain readable in Notion and via explicit "rehydrate the archive of X" requests).
 5. Report: "Archived N rows for `<name>`. Snapshot saved. They will no longer appear in `list projects` — say *'list archived projects'* to see them."
 
-**After archive**, the protection rules apply: no `distill`/`rehydrate` against the archived name unless the user explicitly references the archive. To revive an archived project, the user must say so explicitly (e.g., *"un-archive Hand Turned"*) — the skill should then rename `__archived__/<name>` back to `<name>` on all rows.
+**After archive**, the protection rules apply: no `distill`/`rehydrate` against the archived name unless the user explicitly references the archive. To revive an archived project, the user must say so explicitly (e.g., *"un-archive Acme HVAC"*) — the skill should then rename `__archived__/<name>` back to `<name>` on all rows.
 
 ### `log decision` (or "this is a KDD")
 
@@ -202,7 +202,7 @@ Mid-chat write of one artifact to `__global__` regardless of current chat's proj
 - **First-run auto-create, otherwise never modify schema** — If no matching database exists, the skill creates one (asking once for parent location). If a database with the canonical schema already exists, use it as-is. Never auto-modify an existing database's schema, never auto-create a second database with the same name. If the user has a database that looks like ours but with columns missing or renamed, abort with a clear error (see Failure modes).
 - **Default to global** — If no project context exists, default to `__global__` without asking.
 - **Never write STATE/ROADMAP to `__global__`** — Refuse and explain why.
-- **Never write to `__archived__/*` without explicit opt-in** — Archived projects are dormant. Refuse `distill`, `rehydrate`, or any other write/read against `__archived__/<name>` unless the user explicitly references the archived namespace (e.g., *"rehydrate the archive of Hand Turned"*). Project resolution must also exclude `__*` namespaces from substring matching, so typing "hand turned" never accidentally targets `__archived__/hand turned`.
+- **Never write to `__archived__/*` without explicit opt-in** — Archived projects are dormant. Refuse `distill`, `rehydrate`, or any other write/read against `__archived__/<name>` unless the user explicitly references the archived namespace (e.g., *"rehydrate the archive of Acme HVAC"*). Project resolution must also exclude `__*` namespaces from substring matching, so typing "acme hvac" never accidentally targets `__archived__/acme hvac`.
 - **Reserved namespaces** — Any Project value starting with `__` (double underscore) is reserved (`__global__`, `__archived__/*`, future reservations). The skill must not create new `__*` namespaces beyond these two.
 - **Query by columns, not titles** — Users rename row titles in Notion; rely on `Project + Type [+ Slug + Version]`.
 - **DECISIONS is append-only** — Always read existing Content first, prepend, rewrite. Never overwrite blindly.
@@ -212,7 +212,7 @@ Mid-chat write of one artifact to `__global__` regardless of current chat's proj
 - **Decision-worthiness (project mode)** — Log it if reversing would cost real time (architectural, schema, library, naming, business logic). Skip casual choices.
 - **Learning-worthiness (global mode)** — Log it if you'd want to know this fact/pattern in a different chat 3 months from now.
 - **Artifact-worthiness (global mode)** — Higher bar than project mode. Explicit save request OR clearly reusable template/snippet.
-- **Project resolution** — Exact match on `Project` column first, excluding any value starting with `__`. If zero, case-insensitive substring (still excluding `__*`). If multiple, ask once. If still zero, use `__global__`. To target an archived project, the user must say so explicitly (e.g., *"the archived Hand Turned"*).
+- **Project resolution** — Exact match on `Project` column first, excluding any value starting with `__`. If zero, case-insensitive substring (still excluding `__*`). If multiple, ask once. If still zero, use `__global__`. To target an archived project, the user must say so explicitly (e.g., *"the archived Acme HVAC"*).
 - **Skill-Version stamp** — On every write, set the `Skill-Version` column to the configured `SKILL_VERSION` so future migrations can detect old rows.
 
 ---
@@ -243,7 +243,7 @@ Notion's text properties have practical limits (~2,000 blocks per page; long-tex
 - **Multiple matching databases** — `notion-search` returns more than one match for `DATABASE_NAME`. Ask the user which one to use, then either pin via `NOTION_DATA_SOURCE_ID` for next time or accept the choice for this turn only.
 - **Bad distill overwrote good STATE** — Notion preserves page history per row. Recovery: open the STATE row in Notion → `...` → `Page history` → restore previous version. The skill does not provide an `undo-distill` because Notion's native history is more reliable.
 - **Concurrent distills from two chats** — Last write wins. To reduce risk: re-read STATE immediately before writing it; if the `Last distilled` timestamp changed since you started, abort and report "Concurrent distill detected — re-run."
-- **Project name collision** — `Hand Turned` and `Hand Turned 2` both match a fuzzy search. The skill asks once; never guesses.
+- **Project name collision** — `Acme HVAC` and `Acme HVAC 2` both match a fuzzy search. The skill asks once; never guesses.
 - **Migrations** — If `SKILL_VERSION` in config is newer than the `Skill-Version` column on a row being read, behave normally but note in the distill summary so the user knows there are rows from an older schema (for now, no auto-migration).
 
 ---

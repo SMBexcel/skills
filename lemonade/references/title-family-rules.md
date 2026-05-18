@@ -48,9 +48,9 @@ If after stripping the remaining string is empty or only stopwords, **don't coll
 The `Row` (title) field for an ARTIFACT row is: `{Project} · ARTIFACT · {Slug} · {Version}`
 
 Examples:
-- `Hand Turned · ARTIFACT · landing · latest`
-- `Hand Turned · ARTIFACT · landing · prev`
-- `Veil · ARTIFACT · pricing table · latest`
+- `Acme HVAC · ARTIFACT · landing · latest`
+- `Acme HVAC · ARTIFACT · landing · prev`
+- `Beacon Capital · ARTIFACT · pricing table · latest`
 
 **Note:** The skill never *queries* by row title — only by the `Project + Type + Slug + Version` columns. Row titles are for humans browsing Notion. Users may rename them without breaking anything.
 

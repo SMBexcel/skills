@@ -39,17 +39,17 @@ The memory lives in a **Notion database you own**, not in Claude. It survives mo
 
 ## Install
 
-### Quickest path (downloadable zip)
+### Quickest path — direct zip download
 
-1. Download the [latest release zip](https://github.com/SMBexcel/skills/releases/latest) — look for `lemonade-v1.2.zip`.
-2. Unzip — you'll get a `lemonade/` folder.
-3. Drop it into your Claude skills directory:
+1. **Download:** [lemonade-v1.2.zip](https://github.com/SMBexcel/skills/raw/main/lemonade/lemonade-v1.2.zip) (committed in this folder — single click, no Release page needed).
+2. **Unzip** — you'll get a `lemonade/` folder containing `SKILL.md` and `references/`.
+3. **Drop it into your Claude skills directory:**
    - **Claude Code:** `~/.claude/skills/lemonade/`
    - **claude.ai (Cowork):** install via the Skills UI
-4. Enable the **Notion connector** in Claude (Settings → Connectors → Notion). Grant access to a workspace where you want the database to live.
-5. In any new chat say: *"save learning: setup test"*. The skill will auto-create the `Claude Memory` database on first run (asking you once where to put it), then write a test entry.
+4. **Enable the Notion connector** in Claude (Settings → Connectors → Notion). Grant access to a workspace where you want the database to live.
+5. **Smoke test** — in any new chat say: *"save learning: setup test"*. On first run the skill will ask once where to create the `Claude Memory` database, create it, then write a test entry. Confirm it appears in your Notion.
 
-### From source
+### Alternative — clone the whole repo
 
 ```bash
 git clone https://github.com/SMBexcel/skills.git
@@ -57,6 +57,10 @@ cp -R skills/lemonade ~/.claude/skills/
 ```
 
 Then enable the Notion connector and run the smoke test above.
+
+### Alternative — copy just the files
+
+If you'd rather not download a zip or clone, you can view each file directly in this folder ([`SKILL.md`](./SKILL.md), [`references/`](./references)) and save them into `~/.claude/skills/lemonade/` manually. The skill is markdown all the way down — no build step, no dependencies.
 
 ---
 
@@ -67,19 +71,19 @@ Then enable the Notion connector and run the smoke test above.
 | Say this... | What happens |
 |---|---|
 | `distill` (or *"wrap up"*, *"save this chat"*, *"end of session"*) | Saves the chat's state to Notion |
-| `rehydrate Hand Turned` (or *"catch me up on Hand Turned"*) | Loads everything you know about that project into fresh context |
+| `rehydrate Acme HVAC` (or *"catch me up on Acme HVAC"*) | Loads everything you know about that project into fresh context |
 | `save learning: <insight>` | Logs a cross-chat learning to global memory |
 | `log decision` | Records a single decision without a full distill |
 | `save artifact <name>` | Versions a single artifact mid-chat |
 | `list projects` | Shows everything you're tracking |
-| `status Hand Turned` | Quick "where am I?" without full rehydrate |
-| `archive project Hand Turned` | Closes out a finished project (with confirmation) |
+| `status Acme HVAC` | Quick "where am I?" without full rehydrate |
+| `archive project Acme HVAC` | Closes out a finished project (with confirmation) |
 
 ### Typical day
 
 ```
 Morning chat:
-  > rehydrate Hand Turned
+  > rehydrate Acme HVAC
   → "Where you are: ... Open questions: ... Next moves: ..."
   
   [work for an hour]
@@ -88,7 +92,7 @@ Morning chat:
   → "Saved STATE, appended 2 decisions, updated 1 artifact. Done."
 
 Afternoon chat (fresh, clean context):
-  > rehydrate Veil
+  > rehydrate Beacon Capital
   → "Where you are: ..."
 ```
 
@@ -115,7 +119,7 @@ Lemonade auto-creates this schema on first run — you never set it up manually.
 
 | Column | Type | Purpose |
 |---|---|---|
-| Row | Title | Human-readable label, e.g. `Hand Turned · STATE` |
+| Row | Title | Human-readable label, e.g. `Acme HVAC · STATE` |
 | Project | Text | Project name or `__global__` |
 | Type | Select | `STATE` / `DECISIONS` / `ROADMAP` / `ARTIFACT` |
 | Slug | Text | ARTIFACT only — title-family key |
