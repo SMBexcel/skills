@@ -11,6 +11,7 @@ Each skill is a self-contained folder you drop into your Claude skills directory
 | Skill | Version | What it does |
 |---|---|---|
 | [lemonade](./lemonade) | `1.2` | Plug-and-play persistent memory for Claude chats. Distill / rehydrate via a Notion database you own. Counters context rot. |
+| [dealstream-deals](./dealstream-deals) | `1.0` | Get filtered Dealstream listings into a CSV via your logged-out browser session. Guided flow with legal-posture briefing. Built for SMB searchers sourcing their own deal flow. **Claude Code only.** |
 
 More shipping soon — see the [SMBexcel newsletter](https://www.smbexcel.com) for what's next.
 
@@ -42,7 +43,7 @@ Then follow the per-skill README.
 
 ## Requirements
 
-Most skills require the **Notion connector** (or other MCP connectors) to be enabled in your Claude environment. Each skill's README lists what it needs.
+Requirements vary by skill — some need MCP connectors (e.g. lemonade needs Notion), some run only in Claude Code with a shell (e.g. dealstream-deals needs `bash`, `curl`, `python3`). Each skill's README lists exactly what it needs.
 
 ---
 
