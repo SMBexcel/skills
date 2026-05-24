@@ -1,10 +1,10 @@
 ---
-name: ibba-broker-emails
+name: smb-find-ibba
 description: Get a CSV of every IBBA business broker — name, company, email, phone, website, city/state — from the public IBBA "Find a Business Broker" directory. One public API call enumerates all ~2,800 brokers, then each public profile page yields the contact details. No Firecrawl, no API key, no paid service, no login, no cookie. Use this skill when the user explicitly mentions IBBA and says any of "get IBBA broker emails", "scrape the IBBA directory", "pull IBBA brokers to a CSV", "export IBBA business brokers", or any phrasing implying they want the IBBA broker directory in a spreadsheet, typically for B2B outreach. Do NOT trigger on generic "get me broker emails" or other broker sites (BizBuySell, Dealstream) — only on explicit IBBA references. CLAUDE CODE ONLY — runs a Python script from the user's machine; cannot work in claude.ai. Walks the user through (0) an environment check and (1) a one-time legal-posture briefing they must acknowledge, then runs.
 version: 1.0
 ---
 
-# ibba-broker-emails
+# smb-find-ibba
 
 Gets every broker in the IBBA "Find a Business Broker" directory into a clean CSV — name, company, email, phone, website, location — using nothing but the site's own public endpoints. One geo API call lists all ~2,800 brokers; each public profile page carries the contact details in plain HTML. No login, no cookie, no paid tool.
 
@@ -26,7 +26,7 @@ If you do NOT — e.g. you're in **claude.ai** or any chat environment without l
 
 > ⚠️ **This skill needs Claude Code — it can't run here.**
 >
-> ibba-broker-emails runs a Python script on your own machine. That only works in Claude Code (the CLI). Install Claude Code, drop this skill into `~/.claude/skills/ibba-broker-emails/`, and ask again there. Setup: https://github.com/SMBexcel/skills
+> smb-find-ibba runs a Python script on your own machine. That only works in Claude Code (the CLI). Install Claude Code, drop this skill into `~/.claude/skills/smb-find-ibba/`, and ask again there. Setup: https://github.com/SMBexcel/skills
 
 ## Step 1 — Brief the user on legal posture (one opt-in)
 
@@ -56,7 +56,7 @@ If the user does not reply `yes`, stop. Do not proceed.
 The skill bundles one dependency-free Python script (stdlib only) in `scripts/ibba_scraper.py`. Run from the user's working directory:
 
 ```bash
-SKILL_DIR=~/.claude/skills/ibba-broker-emails
+SKILL_DIR=~/.claude/skills/smb-find-ibba
 python3 "$SKILL_DIR/scripts/ibba_scraper.py" run --out ./ibba-export
 ```
 
@@ -87,7 +87,7 @@ The script prints final counts to stderr. Relay to the user:
 
 ## Distribution notes (for the skill author, not the end user)
 
-- Bundle the entire `~/.claude/skills/ibba-broker-emails/` directory. Recipients copy it to their own `~/.claude/skills/` — **Claude Code only**.
+- Bundle the entire `~/.claude/skills/smb-find-ibba/` directory. Recipients copy it to their own `~/.claude/skills/` — **Claude Code only**.
 - Dependency: `python3` only. No pip installs, no `curl` binary, no API keys.
 - License MIT (see `LICENSE`).
 - Update cadence: if IBBA changes the geo endpoint or profile-page markup, update `GEO_URL` / `parse_profile()` in `scripts/ibba_scraper.py`. Spot-check quarterly.

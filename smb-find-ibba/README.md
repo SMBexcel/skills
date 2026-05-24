@@ -1,4 +1,4 @@
-# ibba-broker-emails
+# smb-find-ibba
 
 **Get every IBBA business broker into a CSV — name, company, email, phone, website, location — using only the directory's own public endpoints.**
 
@@ -67,16 +67,16 @@ Plus `./ibba-export/ibba_brokers.csv`, the raw directory dump from stage 1.
 
 ### Quickest path — direct zip download
 
-1. **Download:** [ibba-broker-emails-v1.0.zip](https://github.com/SMBexcel/skills/raw/main/ibba-broker-emails/ibba-broker-emails-v1.0.zip)
-2. **Unzip** — you'll get an `ibba-broker-emails/` folder containing `SKILL.md` and `scripts/`.
-3. **Drop it into** `~/.claude/skills/ibba-broker-emails/`.
+1. **Download:** [ibba-broker-emails-v1.0.zip](https://github.com/SMBexcel/skills/raw/main/smb-find-ibba/ibba-broker-emails-v1.0.zip)
+2. **Unzip** — you'll get an `ibba-broker-emails/` folder (legacy name in the v1.0 archive) containing `SKILL.md` and `scripts/`. Rename it to `smb-find-ibba/`.
+3. **Drop the renamed folder into** `~/.claude/skills/smb-find-ibba/`.
 4. **Smoke test** — in any new Claude Code chat say: *"get IBBA broker emails into a CSV"*. The skill starts with the environment check and legal briefing.
 
 ### Alternative — clone the whole repo
 
 ```bash
 git clone https://github.com/SMBexcel/skills.git
-cp -R skills/ibba-broker-emails ~/.claude/skills/
+cp -R skills/smb-find-ibba ~/.claude/skills/
 ```
 
 ---
