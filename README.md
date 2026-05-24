@@ -22,20 +22,22 @@ More shipping soon — see the [SMBexcel newsletter](https://www.smbexcel.com) f
 
 Each skill folder has its own `README.md` with skill-specific setup, but the general pattern:
 
-### Option 1 — Download a release (recommended for non-developers)
+### Option 1 — Download the per-skill zip (recommended for non-developers)
 
-1. Open the [Releases page](https://github.com/SMBexcel/skills/releases) and grab the zip for the skill + version you want (e.g. `lemonade-v1.2.zip`).
-2. Unzip — you'll get a folder like `lemonade/` containing `SKILL.md` and `references/`.
-3. Drop the folder into your Claude skills directory:
+Each skill folder has its own committed `<skill>-vX.Y.zip` you can grab in one click — no Releases page required.
+
+1. Open the skill folder above (e.g. [`smb-find-dealstream`](./smb-find-dealstream)).
+2. Click the `<skill>-vX.Y.zip` file → **Download raw file**.
+3. Unzip. Drop the folder into your Claude skills directory:
    - **Claude Code** (CLI): `~/.claude/skills/<skill-name>/`
    - **claude.ai** (Cowork mode): install via the Skills UI
 4. Open the skill's `README.md` for any one-time setup (connectors, config, etc.).
 
-### Option 2 — Clone the whole repo
+### Option 2 — Clone the whole repo (developers / CLI)
 
 ```bash
 git clone https://github.com/SMBexcel/skills.git
-cp -R skills/lemonade ~/.claude/skills/
+cp -R skills/smb-find-dealstream ~/.claude/skills/
 ```
 
 Then follow the per-skill README.
@@ -51,7 +53,7 @@ Requirements vary by skill — some need MCP connectors (e.g. lemonade needs Not
 ## Versioning
 
 - Skills follow semver-ish: `MAJOR.MINOR` (e.g. `1.2`).
-- Each version is tagged and released as a downloadable zip on the [Releases page](https://github.com/SMBexcel/skills/releases).
+- Each version ships a downloadable zip (`<skill>-vX.Y.zip`) committed inside its skill folder.
 - Breaking changes bump MAJOR; behavior-additive changes bump MINOR. The skill's own `SKILL.md` always carries its `Version:` field and a changelog at the bottom.
 
 ---
