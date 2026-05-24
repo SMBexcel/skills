@@ -1,4 +1,4 @@
-# dealstream-deals
+# smb-find-dealstream
 
 **Get filtered Dealstream listings into a CSV — guided, legally-briefed, no paid tools.**
 
@@ -70,22 +70,22 @@ Output: a CSV with one row per unique deal, including:
 
 ### Quickest path — direct zip download
 
-1. **Download:** [dealstream-deals-v1.0.zip](https://github.com/SMBexcel/skills/raw/main/dealstream-deals/dealstream-deals-v1.0.zip) (committed in this folder — single click, no Release page needed).
-2. **Unzip** — you'll get a `dealstream-deals/` folder containing `SKILL.md` and `scripts/`.
-3. **Drop it into your Claude Code skills directory:**
-   - `~/.claude/skills/dealstream-deals/`
+1. **Download:** [dealstream-deals-v1.0.zip](https://github.com/SMBexcel/skills/raw/main/smb-find-dealstream/dealstream-deals-v1.0.zip) (committed in this folder — single click, no Release page needed).
+2. **Unzip** — you'll get a `dealstream-deals/` folder (legacy name in the v1.0 archive) containing `SKILL.md` and `scripts/`. Rename it to `smb-find-dealstream/`.
+3. **Drop the renamed folder into your Claude Code skills directory:**
+   - `~/.claude/skills/smb-find-dealstream/`
 4. **Smoke test** — in any new Claude Code chat say: *"get deals from dealstream for my buy-box"*. The skill will start with the environment check and legal briefing.
 
 ### Alternative — clone the whole repo
 
 ```bash
 git clone https://github.com/SMBexcel/skills.git
-cp -R skills/dealstream-deals ~/.claude/skills/
+cp -R skills/smb-find-dealstream ~/.claude/skills/
 ```
 
 ### Alternative — copy just the files
 
-If you'd rather not download a zip or clone, you can view each file directly in this folder ([`SKILL.md`](./SKILL.md), [`scripts/`](./scripts)) and save them into `~/.claude/skills/dealstream-deals/` manually.
+If you'd rather not download a zip or clone, you can view each file directly in this folder ([`SKILL.md`](./SKILL.md), [`scripts/`](./scripts)) and save them into `~/.claude/skills/smb-find-dealstream/` manually.
 
 ---
 

@@ -1,10 +1,10 @@
 ---
-name: dealstream-deals
+name: smb-find-dealstream
 description: Get a CSV of Dealstream business-for-sale listings using the user's own logged-out browser session. Captures name, asking price, cash flow, location, industry, description, and detail-page URL across all filtered result pages — no Firecrawl, no API key, no paid service. Use this skill when the user explicitly mentions Dealstream and says any of "get deals from dealstream", "download dealstream listings", "export dealstream deals", "pull dealstream deals to a CSV", "dealstream listings to spreadsheet", "aggregate dealstream for my buy-box", or any phrasing implying they want Dealstream search results in a spreadsheet. Do NOT trigger on generic "get me deals" or "download a website" — only on explicit Dealstream references. CLAUDE CODE ONLY — this skill runs shell commands from the user's own machine and cannot work in claude.ai. Walks the user through (0) an environment check, (1) a legal-posture briefing they must acknowledge, (2) applying filters in their browser BEFORE the run, and (3) copying their session cookie via DevTools for a single one-off run.
 version: 1.0
 ---
 
-# dealstream-deals
+# smb-find-dealstream
 
 Gets your filtered Dealstream search results into a clean CSV by replaying your own logged-out browser session. No Firecrawl, no API key, no paid service — just curl + your cookies + a small parser.
 
@@ -43,9 +43,9 @@ If you do NOT have that — e.g. you are running inside **claude.ai**, Cowork, o
 
 > ⚠️ **This skill needs Claude Code — it can't run here.**
 >
-> dealstream-deals runs `curl` from your own computer to collect listings. That only works in Claude Code (the CLI), where commands execute on your machine using your own network session. It cannot work in claude.ai because that environment has no shell and no access to your browser session — the request would come from Anthropic's servers, get a mismatched IP, and be blocked.
+> smb-find-dealstream runs `curl` from your own computer to collect listings. That only works in Claude Code (the CLI), where commands execute on your machine using your own network session. It cannot work in claude.ai because that environment has no shell and no access to your browser session — the request would come from Anthropic's servers, get a mismatched IP, and be blocked.
 >
-> To use this skill: install Claude Code, drop this skill into `~/.claude/skills/dealstream-deals/`, and ask again there. Setup: https://github.com/SMBexcel/skills
+> To use this skill: install Claude Code, drop this skill into `~/.claude/skills/smb-find-dealstream/`, and ask again there. Setup: https://github.com/SMBexcel/skills
 
 Do not attempt to proceed, simulate the collection, or paste-and-parse HTML in a non-Code environment. Just stop.
 
@@ -115,7 +115,7 @@ Save the cookie to a user-CWD location like `./dealstream-export/cookies.txt` so
 
 ## Step 4 — Run it
 
-The skill bundles three scripts in `~/.claude/skills/dealstream-deals/scripts/`:
+The skill bundles three scripts in `~/.claude/skills/smb-find-dealstream/scripts/`:
 
 - **`get-deals.sh`** — thin wrapper; checks for `python3` and forwards all args to `fetch_pages.py`. This is the documented entry point.
 - **`fetch_pages.py`** — the whole pipeline in one pass: fetches each page using **`curl_cffi`** (impersonates Chrome's TLS/JA3 + HTTP/2 fingerprint — plain curl/requests have an obvious non-browser fingerprint DataDome flags on sight), parses it **in memory**, dedupes, and writes a dated CSV. **No HTML is saved to disk** — nothing is left on the user's machine except the CSV. Auto-installs `curl_cffi` + `beautifulsoup4` on first run.
@@ -124,7 +124,7 @@ The skill bundles three scripts in `~/.claude/skills/dealstream-deals/scripts/`:
 It runs as a single command:
 
 ```bash
-SKILL_DIR=~/.claude/skills/dealstream-deals
+SKILL_DIR=~/.claude/skills/smb-find-dealstream
 mkdir -p ./dealstream-export
 # (save the user's cookie to ./dealstream-export/cookies.txt first — see Step 3)
 
@@ -181,11 +181,11 @@ After the CSV is written, `fetch_pages.py` prints the path, total count, and (if
 
 This skill is designed to be packaged and shared with other SMB searchers. To distribute:
 
-- Bundle the entire `~/.claude/skills/dealstream-deals/` directory
+- Bundle the entire `~/.claude/skills/smb-find-dealstream/` directory
 - Recipients install by copying it to their own `~/.claude/skills/` — **Claude Code only**, it cannot run in claude.ai
 - Dependencies: `python3` (does the fetching + parsing), plus two pip packages auto-installed on first run — `curl_cffi` (Chrome TLS impersonation) and `beautifulsoup4` (HTML parsing). No `curl` binary needed anymore.
 - License under MIT (see `LICENSE` in this folder)
-- See `~/.claude/skills/dealstream-deals/README.md` for end-user install instructions
+- See `~/.claude/skills/smb-find-dealstream/README.md` for end-user install instructions
 
 Update cadence: if Dealstream changes their search-page HTML, update the CSS selectors in `scripts/parse_dealstream.py`. Spot-check quarterly.
 
