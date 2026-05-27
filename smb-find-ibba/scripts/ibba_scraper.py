@@ -2,24 +2,28 @@
 """
 IBBA business-broker directory scraper.
 
-Two stages:
-  1) enumerate  -> hit the public /wp-json/brokers/geo endpoint once and dump
-                   every broker (name, company, city, state, zip, profile URL)
-                   to <out>/ibba_brokers.csv
-  2) emails     -> visit each profile page and pull the contact details
-                   (email, phone, website) out of the page's hidden form
-                   fields, writing <out>/ibba_contacts.csv
+Produces a single CSV — `<out>/ibba_brokers.csv` — with one row per broker:
+directory fields (name, company, location, credentials, profile URL) plus
+contact fields (email, phone, website) and a `status` column.
 
-`run` does both. The emails stage is RESUMABLE: re-running skips any profile
-URL already present in the output file, so you can stop/restart freely, and any
-errored profiles get retried on the next run.
+Two subcommands feed the same file:
+  - enumerate : hit IBBA's public /wp-json/brokers/geo endpoint once and
+                write/refresh the CSV. Preserves any contact fields already
+                scraped on prior runs.
+  - emails    : iterate the CSV, fetch each profile page whose status isn't
+                final yet (ok / no_email), extract email/phone/website from
+                the page's hidden contact-form fields, update the CSV.
+
+`run` does both. Re-running is safe and incremental: directory data is
+refreshed, previously-scraped contacts are preserved, and any row whose
+status is empty or `error: ...` is retried.
 
 No third-party dependencies — Python standard library only.
 
 Usage:
   python3 ibba_scraper.py run                 # enumerate + scrape emails
-  python3 ibba_scraper.py enumerate           # just build the broker list
-  python3 ibba_scraper.py emails              # just scrape emails (needs list)
+  python3 ibba_scraper.py enumerate           # just refresh the directory
+  python3 ibba_scraper.py emails              # just scrape pending profiles
   python3 ibba_scraper.py emails --limit 50   # cap profiles (for testing)
   python3 ibba_scraper.py run --out ./my-dir  # choose the output directory
 
@@ -62,14 +66,18 @@ HIDDEN_INPUT_RE = re.compile(
 # Field map for the broker contact form (form id 4) on profile pages.
 FIELD_MAP = {"6": "name", "7": "company", "8": "phone", "9": "website", "10": "email"}
 
-BROKER_FIELDS = [
-    "name", "company", "city", "state", "zip", "url",
-    "cbi", "mami", "master_cbi", "membership",
-]
-CONTACT_FIELDS = [
+# Single output CSV's column order — directory fields, then contact fields, then status.
+FIELDS = [
     "name", "company", "email", "phone", "website",
-    "city", "state", "zip", "cbi", "url", "status",
+    "city", "state", "zip", "cbi", "mami", "master_cbi",
+    "membership", "url", "status",
 ]
+DIRECTORY_FIELDS = (
+    "name", "company", "city", "state", "zip", "cbi", "mami", "master_cbi", "membership",
+)
+# Rows whose `status` is one of these are considered finished; any other value
+# (including "" and "error: ...") will be re-attempted on the next `emails` run.
+FINAL_STATUSES = {"ok", "no_email"}
 
 _print_lock = threading.Lock()
 
@@ -105,50 +113,86 @@ def fetch(url, timeout=30, retries=3):
     raise last_err
 
 
+def _s(v):
+    """Stringify, treating None as empty."""
+    if isinstance(v, str):
+        return v.strip()
+    return "" if v is None else str(v)
+
+
+def load_csv(path):
+    """Load CSV into a dict keyed by url. Returns {} if the file doesn't exist."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, newline="", encoding="utf-8") as fh:
+        return {r["url"]: r for r in csv.DictReader(fh) if r.get("url")}
+
+
+def write_csv_atomic(path, rows):
+    """Write the full CSV atomically (write to .tmp, rename)."""
+    tmp = path + ".tmp"
+    with open(tmp, "w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=FIELDS)
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: r.get(k, "") for k in FIELDS})
+    os.replace(tmp, path)
+
+
 # --------------------------------------------------------------------------- #
-# Stage 1: enumerate brokers
+# Stage 1: enumerate brokers (and merge with anything already on disk)
 # --------------------------------------------------------------------------- #
-def enumerate_brokers(brokers_csv):
-    log("Fetching broker directory from geo endpoint ...")
+def fetch_directory():
+    """Hit the geo endpoint and return a list of directory-field dicts."""
     data = json.loads(fetch(GEO_URL, timeout=120))
-    feats = data.get("features", [])
-    rows = []
+    out = []
     seen = set()
-
-    def s(v):
-        return (v or "").strip() if isinstance(v, str) else ("" if v is None else str(v))
-
-    for f in feats:
+    for f in data.get("features", []):
         p = (f.get("geometry") or {}).get("properties") or {}
-        url = s(p.get("url"))
+        url = _s(p.get("url"))
         if not url or url in seen:
             continue
         seen.add(url)
-        rows.append({
-            "name": s(p.get("name")),
-            "company": s(p.get("company")),
-            "city": s(p.get("city")),
-            "state": s(p.get("state")),
-            "zip": s(p.get("zip")),
+        out.append({
+            "name": _s(p.get("name")),
+            "company": _s(p.get("company")),
+            "city": _s(p.get("city")),
+            "state": _s(p.get("state")),
+            "zip": _s(p.get("zip")),
             "url": url,
-            "cbi": s(p.get("cbi")),
-            "mami": s(p.get("mami")),
-            "master_cbi": s(p.get("master_cbi")),
-            "membership": s(p.get("membership")),
+            "cbi": _s(p.get("cbi")),
+            "mami": _s(p.get("mami")),
+            "master_cbi": _s(p.get("master_cbi")),
+            "membership": _s(p.get("membership")),
         })
-    with open(brokers_csv, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=BROKER_FIELDS)
-        w.writeheader()
-        w.writerows(rows)
-    log(f"Wrote {len(rows)} brokers -> {brokers_csv}")
-    return rows
+    return out
 
 
-def load_brokers(brokers_csv):
-    if not os.path.exists(brokers_csv):
-        return None
-    with open(brokers_csv, newline="", encoding="utf-8") as fh:
-        return list(csv.DictReader(fh))
+def enumerate_and_merge(csv_path):
+    """Fetch directory, merge with existing CSV (preserving scraped contacts),
+    write atomically. Returns the merged dict keyed by url."""
+    log("Fetching broker directory from geo endpoint ...")
+    directory = fetch_directory()
+    existing = load_csv(csv_path)
+    merged = {}
+    for d in directory:
+        url = d["url"]
+        if url in existing:
+            row = dict(existing[url])
+            # Refresh directory-side fields in case IBBA updated them, but
+            # don't clobber a previously-scraped value with a blank from the API.
+            for k in DIRECTORY_FIELDS:
+                if d.get(k):
+                    row[k] = d[k]
+        else:
+            row = {**d, "email": "", "phone": "", "website": "", "status": ""}
+        merged[url] = row
+    write_csv_atomic(csv_path, list(merged.values()))
+    added = sum(1 for u in merged if u not in existing)
+    dropped = sum(1 for u in existing if u not in merged)
+    log(f"Wrote {len(merged)} brokers -> {csv_path}"
+        f" ({added} new since last run, {dropped} no longer in directory)")
+    return merged
 
 
 # --------------------------------------------------------------------------- #
@@ -171,80 +215,63 @@ def parse_profile(html):
     return out
 
 
-def load_done_urls(contacts_csv):
-    """URLs already scraped (any status) so we can resume without redoing them."""
-    done = set()
-    if os.path.exists(contacts_csv):
-        with open(contacts_csv, newline="", encoding="utf-8") as fh:
-            for row in csv.DictReader(fh):
-                if row.get("url"):
-                    done.add(row["url"])
-    return done
-
-
-def scrape_emails(brokers_csv, contacts_csv, workers=6, delay=0.5, limit=None):
-    brokers = load_brokers(brokers_csv)
-    if not brokers:
-        log("No broker list found. Run `enumerate` first.")
+def scrape_emails(csv_path, workers=6, delay=0.5, limit=None):
+    rows = load_csv(csv_path)
+    if not rows:
+        log("No brokers in CSV. Run `enumerate` or `run` first.")
         sys.exit(1)
 
-    done = load_done_urls(contacts_csv)
-    todo = [b for b in brokers if b["url"] not in done]
+    todo = [u for u, r in rows.items() if r.get("status") not in FINAL_STATUSES]
     if limit:
         todo = todo[:limit]
-    log(f"{len(brokers)} brokers total | {len(done)} already done | {len(todo)} to scrape")
+    done_count = len(rows) - sum(1 for r in rows.values() if r.get("status") not in FINAL_STATUSES)
+    log(f"{len(rows)} brokers | {done_count} already done | {len(todo)} to scrape")
     if not todo:
         log("Nothing to do.")
         return
 
-    new_file = not os.path.exists(contacts_csv)
-    fh = open(contacts_csv, "a", newline="", encoding="utf-8")
-    writer = csv.DictWriter(fh, fieldnames=CONTACT_FIELDS)
-    if new_file:
-        writer.writeheader()
-    write_lock = threading.Lock()
     counter = {"done": 0, "ok": 0, "noemail": 0, "err": 0}
+    lock = threading.Lock()
 
-    def work(b):
+    def work(url):
         time.sleep(delay * random.random())
-        row = {
-            "name": b["name"], "company": b["company"], "email": "", "phone": "",
-            "website": "", "city": b["city"], "state": b["state"], "zip": b["zip"],
-            "cbi": b["cbi"], "url": b["url"], "status": "",
-        }
+        update = {}
         try:
-            html = fetch(b["url"])
+            html = fetch(url)
             info = parse_profile(html)
-            row["email"] = info.get("email", "")
-            row["phone"] = info.get("phone", "")
-            row["website"] = info.get("website", "")
-            if info.get("company") and not row["company"]:
-                row["company"] = info["company"]
-            row["status"] = "ok" if row["email"] else "no_email"
+            update["email"] = info.get("email", "")
+            update["phone"] = info.get("phone", "")
+            update["website"] = info.get("website", "")
+            # If the directory had a blank company but the profile carries one, fill it.
+            if info.get("company") and not rows[url].get("company"):
+                update["company"] = info["company"]
+            update["status"] = "ok" if update["email"] else "no_email"
         except Exception as e:  # noqa: BLE001 - record the failure, keep going
-            row["status"] = f"error: {type(e).__name__}"
-        return row
+            update["status"] = f"error: {type(e).__name__}"
+        return url, update
 
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        futures = [ex.submit(work, b) for b in todo]
+        futures = [ex.submit(work, u) for u in todo]
         for fut in as_completed(futures):
-            row = fut.result()
-            with write_lock:
-                writer.writerow(row)
-                fh.flush()
+            url, update = fut.result()
+            with lock:
+                rows[url].update(update)
                 counter["done"] += 1
-                if row["status"] == "ok":
+                status = update.get("status", "")
+                if status == "ok":
                     counter["ok"] += 1
-                elif row["status"] == "no_email":
+                elif status == "no_email":
                     counter["noemail"] += 1
                 else:
                     counter["err"] += 1
+                # Periodic atomic flush so a crash never loses progress.
                 if counter["done"] % 25 == 0 or counter["done"] == len(todo):
+                    write_csv_atomic(csv_path, list(rows.values()))
                     log(f"  {counter['done']}/{len(todo)} "
                         f"(emails: {counter['ok']}, no-email: {counter['noemail']}, "
                         f"errors: {counter['err']})")
-    fh.close()
-    log(f"Done. Wrote/updated {contacts_csv}")
+
+    log(f"Done. Wrote/updated {csv_path}")
     log(f"  emails found: {counter['ok']} | no email: {counter['noemail']} | errors: {counter['err']}")
     if counter["err"]:
         log("  Re-run `emails` to retry the errored profiles (it resumes automatically).")
@@ -261,14 +288,12 @@ def main():
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
-    brokers_csv = os.path.join(args.out, "ibba_brokers.csv")
-    contacts_csv = os.path.join(args.out, "ibba_contacts.csv")
+    csv_path = os.path.join(args.out, "ibba_brokers.csv")
 
     if args.command in ("run", "enumerate"):
-        enumerate_brokers(brokers_csv)
+        enumerate_and_merge(csv_path)
     if args.command in ("run", "emails"):
-        scrape_emails(brokers_csv, contacts_csv, workers=args.workers,
-                      delay=args.delay, limit=args.limit)
+        scrape_emails(csv_path, workers=args.workers, delay=args.delay, limit=args.limit)
 
 
 if __name__ == "__main__":
