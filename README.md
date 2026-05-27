@@ -11,7 +11,6 @@ Each skill is a self-contained folder you drop into your Claude skills directory
 | Skill | Version | What it does |
 |---|---|---|
 | [lemonade](./lemonade) | `1.2` | Plug-and-play persistent memory for Claude chats. Distill / rehydrate via a Notion database you own. Counters context rot. |
-| [smb-find-dealstream](./smb-find-dealstream) | `1.0` | Get filtered Dealstream listings into a CSV via your logged-out browser session. Guided flow with legal-posture briefing. Built for SMB searchers sourcing their own deal flow. **Claude Code only.** |
 | [smb-find-ibba](./smb-find-ibba) | `1.1` | Get every IBBA business broker (~2,800) into a single CSV — name, company, email, phone, website, location, credentials — from the directory's own public endpoints. No login, no cookie, no paid tool. Resumable, merges on re-run. Legal-posture briefing included. **Claude Code only.** |
 
 More shipping soon — see the [SMBexcel newsletter](https://www.smbexcel.com) for what's next.
@@ -26,7 +25,7 @@ Each skill folder has its own `README.md` with skill-specific setup, but the gen
 
 Each skill folder has its own committed `<skill>-vX.Y.zip` you can grab in one click — no Releases page required.
 
-1. Open the skill folder above (e.g. [`smb-find-dealstream`](./smb-find-dealstream)).
+1. Open the skill folder above (e.g. [`smb-find-ibba`](./smb-find-ibba)).
 2. Click the `<skill>-vX.Y.zip` file → **Download raw file**.
 3. Unzip. Drop the folder into your Claude skills directory:
    - **Claude Code** (CLI): `~/.claude/skills/<skill-name>/`
@@ -37,7 +36,7 @@ Each skill folder has its own committed `<skill>-vX.Y.zip` you can grab in one c
 
 ```bash
 git clone https://github.com/SMBexcel/skills.git
-cp -R skills/smb-find-dealstream ~/.claude/skills/
+cp -R skills/smb-find-ibba ~/.claude/skills/
 ```
 
 Then follow the per-skill README.
@@ -46,7 +45,7 @@ Then follow the per-skill README.
 
 ## Requirements
 
-Requirements vary by skill — some need MCP connectors (e.g. lemonade needs Notion), some run only in Claude Code with a shell (e.g. smb-find-dealstream needs `bash`, `curl`, `python3`). Each skill's README lists exactly what it needs.
+Requirements vary by skill — some need MCP connectors (e.g. lemonade needs Notion), some run only in Claude Code with a shell (e.g. smb-find-ibba needs `bash`, `curl`, `python3`). Each skill's README lists exactly what it needs.
 
 ---
 
